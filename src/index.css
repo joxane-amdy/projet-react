@@ -1,0 +1,20 @@
+/* ============================================================
+   index.css
+   Fichier CSS global. On importe Tailwind CSS ici.
+   Tailwind génère automatiquement toutes les classes utilitaires.
+   ============================================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Style de base pour tout le site */
+@layer base {
+  html {
+    font-family: "DM Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; /* Rend le texte plus lisse */
+  }
+  body {
+    @apply bg-slate-50 text-slate-800;
+  }
+}
