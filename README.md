@@ -57,22 +57,25 @@ src/
 1. Cloner le projet :
 
 ```bash
-git clone https://github.com/projet-react/taskflow.git
+git clone https://github.com/projet-react
 ```
 
 2. Aller dans le dossier :
 
 ```bash
-cd taskflow
+cd projet-react
 ```
-
 3. Installer les dépendances :
 
 ```bash
 npm install
 ```
-
-4. Lancer le projet :
+4. Aller sur ça branche
+git checkout feature/auth
+git checkout feature/dashboard
+git checkout feature/landing
+git checkout feature/userAut
+5. Lancer le projet :
 
 ```bash
 npm run dev
