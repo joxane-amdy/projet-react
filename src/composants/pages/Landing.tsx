@@ -1,6 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
+const STEPS = [
+  { num: 1, title: "Créer un compte", desc: "Inscrivez-vous gratuitement en quelques secondes." },
+  { num: 2, title: "Ajoutez vos tâches", desc: "Organisez vos tâches facilement et rapidement." },
+  { num: 3, title: "Accomplissez plus", desc: "Suivez votre progression et accomplissez vos objectifs." },
+];
+
 export default function Landing() {
   const navigate = useNavigate();
 
@@ -79,6 +85,30 @@ export default function Landing() {
           ))}
         </div>
       </section>
+      
+      <section id="how" className="py-20 px-6 bg-emerald-50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 block mb-2">Comment ça marche</span>
+            <h2 className="text-4xl font-extrabold text-slate-900">Prêt en 3 étapes</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {STEPS.map((s, i) => (
+              <div key={s.num} className="relative flex flex-col items-center text-center">
+                {i < STEPS.length - 1 && (
+                  <div className="hidden md:block absolute top-6 left-[calc(50%+2.5rem)] right-0 h-px border-t-2 border-dashed border-emerald-200" />
+                )}
+                <div className="w-14 h-14 rounded-full bg-emerald-600 text-white font-extrabold text-xl flex items-center justify-center mb-5 shadow-lg shadow-emerald-200">
+                  {s.num}
+                </div>
+                <h3 className="font-bold text-slate-800 mb-2">{s.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+        
 
       {/* ── Footer ── */}
       <footer className="bg-gray-800 text-center py-6 text-sm text-gray-400 border-t border-gray-100">
