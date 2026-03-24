@@ -37,18 +37,68 @@ Ce projet permet de créer, organiser et suivre ses tâches de manière simple e
 
 ```
 src/
-├── hooks/
-│   └── useAuth.ts        # Gestion de l’authentification
-│
-├── pages/
-│   ├── Auth.tsx          # Page connexion / inscription
-│   ├── Dashboard.tsx     # Tableau de bord principal
-│   ├── Landing.tsx       # Page d’accueil
-│
-├── App.tsx               # Routes principales
-├── main.tsx              # Point d’entrée
-├── index.css             # Styles globaux
-```
+├── app/                     # Configuration globale de l'app
+│   ├── App.tsx
+│   └── AppRouter.tsx
+
+├── components/             # Composants réutilisables globaux
+│   ├── ui/                 # UI pure (design system)
+│   │   ├── Button.tsx
+│   │   ├── Input.tsx
+│   │   └── Card.tsx
+│   │
+│   └── layout/             # Structure globale
+│       ├── Navbar.tsx
+│       └── Footer.tsx
+
+├── features/               # Logique métier par fonctionnalité
+│   └── tasks/
+│       ├── components/     # Composants liés aux tâches
+│       │   ├── TaskForm.tsx
+│       │   ├── TaskItem.tsx
+│       │   └── TaskList.tsx
+│       │
+│       ├── hooks/          # Hooks spécifiques aux tâches
+│       │   └── useTasks.ts
+│       │
+│       ├── services/       # API / logique métier
+│       │   └── taskService.ts
+│       │
+│       └── types.ts        # Types liés aux tâches
+
+├── features/
+│   └── auth/
+│       ├── hooks/
+│       │   └── useAuth.ts
+│       │
+│       ├── services/
+│       │   └── authService.ts
+│       │
+│       └── types.ts
+
+├── pages/                  # Pages (routing)
+│   ├── Landing.tsx
+│   ├── Login.tsx
+│   ├── Register.tsx
+│   ├── Dashboard.tsx
+│   ├── Auth.tsx
+│   └── ForgotPassword.tsx
+
+├── hooks/                  # Hooks globaux (si réutilisables partout)
+│   └── (optionnel)
+
+├── services/               # Services globaux (API génériques)
+│   └── (optionnel)
+
+├── types/                  # Types globaux
+│   └── index.ts
+
+├── utils/                  # Fonctions utilitaires
+│   └── helpers.ts
+
+├── assets/                 # Images, icônes, styles
+│   └── ...
+
 
 ---
 
