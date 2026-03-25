@@ -6,7 +6,7 @@ import {
 } from "recharts";
 import { useAuth } from "../hooks/useAuth";
 
-// ─── Types ───────────────────────────────────────────────────
+//  Types 
 
 type TypeTache = "Travail" | "Personnel" | "Santé" | "Étude";
 type Priorite  = "haute" | "normale" | "basse";
@@ -21,7 +21,7 @@ interface Tache {
   terminee: boolean;
 }
 
-// ─── Constantes ──────────────────────────────────────────────
+//  Constantes
 
 const TYPES: TypeTache[] = ["Travail", "Personnel", "Santé", "Étude"];
 const FILTRES: Filtre[]  = ["Toutes", ...TYPES];
@@ -54,12 +54,12 @@ const BADGE_PRIO: Record<Priorite, string> = {
 
 const FORM_INIT = { titre: "", type: "Travail" as TypeTache, priorite: "normale" as Priorite };
 
-// ─── Utilitaire ──────────────────────────────────────────────
+//  Utilitaire 
 
 const formaterDate = (iso: string) =>
   new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 
-// ─── Tooltip personnalisé pour le bar chart ──────────────────
+// Tooltip personnalisé pour le bar chart 
 
 const BarTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -71,16 +71,16 @@ const BarTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-// ─── Composant principal ──────────────────────────────────────
+//  Composant principal 
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  // ✅ MODIF 1 — clé unique par utilisateur
+  //  MODIF 1 — clé unique par utilisateur
   const storageKey = `tasks_${user?.email ?? "guest"}`;
 
-  // ✅ MODIF 2 — charger depuis localStorage au démarrage
+  //  MODIF 2 — charger depuis localStorage au démarrage
   const [taches, setTaches] = useState<Tache[]>(() => {
     const saved = localStorage.getItem(storageKey);
     return saved ? JSON.parse(saved) : [];
@@ -91,13 +91,13 @@ export default function Dashboard() {
   const [form,        setForm]        = useState(FORM_INIT);
   const [erreur,      setErreur]      = useState("");
 
-  // ✅ MODIF 3 — helper qui sauvegarde ET met à jour le state en même temps
+  //  MODIF 3 — helper qui sauvegarde ET met à jour le state en même temps
   function sauvegarderTaches(nouvellesTaches: Tache[]) {
     localStorage.setItem(storageKey, JSON.stringify(nouvellesTaches));
     setTaches(nouvellesTaches);
   }
 
-  // ── Stats ──
+  //  Stats 
   const total       = taches.length;
   const terminees   = taches.filter((t) => t.terminee).length;
   const enCours     = total - terminees;
@@ -121,7 +121,7 @@ export default function Dashboard() {
   const tachesFiltrees =
     filtreActif === "Toutes" ? taches : taches.filter((t) => t.type === filtreActif);
 
-  // ── Actions formulaire ──
+  //  Actions formulaire 
 
   function ouvrirAjout() {
     setFormMode("nouveau");
@@ -143,7 +143,7 @@ export default function Dashboard() {
   function sauvegarder() {
     if (!form.titre.trim()) { setErreur("Le titre est obligatoire."); return; }
     if (formMode === "nouveau") {
-      // ✅ sauvegarderTaches au lieu de setTaches
+      // sauvegarderTaches au lieu de setTaches
       sauvegarderTaches([
         { id: Date.now(), ...form, dateCreation: new Date().toISOString(), terminee: false },
         ...taches,
@@ -154,7 +154,7 @@ export default function Dashboard() {
     fermerFormulaire();
   }
 
-  // ✅ sauvegarderTaches au lieu de setTaches partout
+  // sauvegarderTaches au lieu de setTaches partout
   const supprimerTache = (id: number) =>
     sauvegarderTaches(taches.filter((t) => t.id !== id));
 
@@ -163,7 +163,7 @@ export default function Dashboard() {
 
   const deconnecter = () => { logout(); navigate("/"); };
 
-  // ─── Rendu ───────────────────────────────────────────────────
+  //  Rendu 
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -192,7 +192,7 @@ export default function Dashboard() {
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-4">
 
-        {/* ── CARTES STATS ── */}
+        {/*  CARTES STATS */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: "Total",       val: total,             color: "text-gray-800"    },

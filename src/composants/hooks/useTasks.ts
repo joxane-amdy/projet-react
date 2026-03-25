@@ -4,7 +4,7 @@ export interface Task {
   id: string;
   titre: string;
   fait: boolean;
-  userEmail: string; // 👈 lier la tâche à l'utilisateur
+  userEmail: string; // lier la tâche à l'utilisateur
 }
 
 export function useTasks(userEmail: string) {
@@ -13,14 +13,14 @@ export function useTasks(userEmail: string) {
   const storageKey = `tasks_${userEmail}`;
 
   const [tasks, setTasks] = useState<Task[]>(() => {
-    // ✅ Charger depuis localStorage au démarrage
+    // Charger depuis localStorage au démarrage
     const saved = localStorage.getItem(storageKey);
     return saved ? JSON.parse(saved) : [];
   });
 
   // Helper : sauvegarder ET mettre à jour le state
   function saveTasks(newTasks: Task[]) {
-    localStorage.setItem(storageKey, JSON.stringify(newTasks)); // ✅ persister
+    localStorage.setItem(storageKey, JSON.stringify(newTasks)); 
     setTasks(newTasks);
   }
 
@@ -31,7 +31,7 @@ export function useTasks(userEmail: string) {
       fait: false,
       userEmail,
     };
-    saveTasks([...tasks, newTask]); // ✅ sauvegarde auto
+    saveTasks([...tasks, newTask]); 
   }
 
   function toggleTask(id: string) {
