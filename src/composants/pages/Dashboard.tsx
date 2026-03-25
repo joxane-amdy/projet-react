@@ -77,11 +77,25 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const [taches,      setTaches]      = useState<Tache[]>([]);
+  // ✅ MODIF 1 — clé unique par utilisateur
+  const storageKey = `tasks_${user?.email ?? "guest"}`;
+
+  // ✅ MODIF 2 — charger depuis localStorage au démarrage
+  const [taches, setTaches] = useState<Tache[]>(() => {
+    const saved = localStorage.getItem(storageKey);
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [filtreActif, setFiltreActif] = useState<Filtre>("Toutes");
   const [formMode,    setFormMode]    = useState<"nouveau" | number | null>(null);
   const [form,        setForm]        = useState(FORM_INIT);
   const [erreur,      setErreur]      = useState("");
+
+  // ✅ MODIF 3 — helper qui sauvegarde ET met à jour le state en même temps
+  function sauvegarderTaches(nouvellesTaches: Tache[]) {
+    localStorage.setItem(storageKey, JSON.stringify(nouvellesTaches));
+    setTaches(nouvellesTaches);
+  }
 
   // ── Stats ──
   const total       = taches.length;
@@ -129,20 +143,24 @@ export default function Dashboard() {
   function sauvegarder() {
     if (!form.titre.trim()) { setErreur("Le titre est obligatoire."); return; }
     if (formMode === "nouveau") {
-      setTaches((prev) => [
+      // ✅ sauvegarderTaches au lieu de setTaches
+      sauvegarderTaches([
         { id: Date.now(), ...form, dateCreation: new Date().toISOString(), terminee: false },
-        ...prev,
+        ...taches,
       ]);
     } else {
-      setTaches((prev) => prev.map((t) => (t.id === formMode ? { ...t, ...form } : t)));
+      sauvegarderTaches(taches.map((t) => (t.id === formMode ? { ...t, ...form } : t)));
     }
     fermerFormulaire();
   }
 
-  const supprimerTache = (id: number) => setTaches((prev) => prev.filter((t) => t.id !== id));
-  const cocherTache    = (id: number) => setTaches((prev) =>
-    prev.map((t) => (t.id === id ? { ...t, terminee: !t.terminee } : t))
-  );
+  // ✅ sauvegarderTaches au lieu de setTaches partout
+  const supprimerTache = (id: number) =>
+    sauvegarderTaches(taches.filter((t) => t.id !== id));
+
+  const cocherTache = (id: number) =>
+    sauvegarderTaches(taches.map((t) => (t.id === id ? { ...t, terminee: !t.terminee } : t)));
+
   const deconnecter = () => { logout(); navigate("/"); };
 
   // ─── Rendu ───────────────────────────────────────────────────
@@ -272,7 +290,6 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <p className="text-base font-semibold text-gray-800">Mes tâches</p>
 
-            {/* Filtres simplifiés — tabs */}
             <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
               {FILTRES.map((filtre) => (
                 <button
@@ -291,7 +308,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Sous-titre */}
           <p className="text-xs text-gray-400 mb-4">
             {tachesFiltrees.length === 0 ? "Aucune tâche" : `${tachesFiltrees.length} tâche${tachesFiltrees.length > 1 ? "s" : ""}`}
             {filtreActif !== "Toutes" && ` · ${filtreActif}`}
@@ -314,7 +330,6 @@ export default function Dashboard() {
               />
               {erreur && <p className="text-xs text-red-500 mb-2">{erreur}</p>}
 
-              {/* Type */}
               <div className="flex gap-2 flex-wrap mb-3">
                 {TYPES.map((type) => (
                   <button
@@ -332,7 +347,6 @@ export default function Dashboard() {
                 ))}
               </div>
 
-              {/* Priorité */}
               <select
                 value={form.priorite}
                 onChange={(e) => setForm((f) => ({ ...f, priorite: e.target.value as Priorite }))}
