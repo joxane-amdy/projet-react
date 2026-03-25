@@ -12,11 +12,9 @@ export function useAuth() {
 
   //  user connecté (SANS mot de passe pour sécurité)
   const [user, setUser] = useState<Omit<User, "motDePasse"> | null>(() => {
-    // On récupère l'utilisateur déjà connecté dans le navigateur
+    
     const saved = localStorage.getItem("currentUser");
 
-    // Si trouvé → on le transforme en objet JS
-    // Sinon → null (personne connecté)
     return saved ? JSON.parse(saved) : null;
   });
 
@@ -26,17 +24,14 @@ export function useAuth() {
 
   // Fonction pour récupérer tous les utilisateurs
   function getUsers(): User[] {
-    // On lit la liste dans localStorage
-    // Si rien → tableau vide
+    
     return JSON.parse(localStorage.getItem("users") || "[]");
   }
-
 
   //  Fonction pour sauvegarder les utilisateurs
   function saveUsers(users: User[]) {
     localStorage.setItem("users", JSON.stringify(users));
   }
-
 
   // INSCRIPTION
   function register(prenom: string, nom: string, email: string, motDePasse: string) {
@@ -62,19 +57,13 @@ export function useAuth() {
       return false;
     }
 
-    // Créer nouvel utilisateur
     const newUser: User = { prenom, nom, email, motDePasse };
 
-    // Ajouter dans la liste
     users.push(newUser);
-
-    // Sauvegarder dans localStorage
     saveUsers(users);
-
-    // Connecter automatiquement l'utilisateur
     setUser({ prenom, nom, email });
 
-    // Sauvegarder utilisateur connecté
+    
     localStorage.setItem(
       "currentUser",
       JSON.stringify({ prenom, nom, email })
@@ -90,9 +79,8 @@ export function useAuth() {
   //  CONNEXION
   function login(email: string, motDePasse: string) {
 
-    const users = getUsers(); // récupérer tous les comptes
+    const users = getUsers(); 
 
-    // Chercher utilisateur avec email + mot de passe
     const found = users.find(
       (u) => u.email === email && u.motDePasse === motDePasse
     );
