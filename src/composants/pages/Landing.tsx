@@ -31,15 +31,13 @@ export default function Landing() {
       {/* HERO */}
       <section className="bg-gradient-to-b from-green-50 to-white flex-1 flex flex-col items-center justify-center text-center px-4 py-20">
         
-        <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full mb-6">
-          ✦ Gratuit et simple
+        <span className="inline-block bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full mb-6">
+          ✦ Gratuit et simple à utiliser
         </span>
-
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Gérez vos tâches <br />
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+          Gérez vos tâches,<br />
           <span className="text-emerald-600">simplement.</span>
         </h1>
-
         <p className="text-base sm:text-lg text-gray-500 mb-8 sm:mb-10 max-w-sm sm:max-w-md">
           Créez, modifiez et supprimez vos tâches en quelques clics.
           Gratuit, simple, sans distractions et accomplissez plus chaque jour.
@@ -58,6 +56,15 @@ export default function Landing() {
             <span key={t} className="flex items-center gap-1">
               <span className="text-green-500 font-bold">✓</span> {t}
             </span>
+          ))}
+        </div>
+        {/* Stats band */}
+        <div className="max-w-5xl mx-auto mt-16 grid grid-cols-3 gap-6 relative z-10">
+          {[['12 000+', 'Utilisateurs actifs'], ['98%', 'Taux de satisfaction'], ['3,2M', 'Tâches complétées']].map(([v, l]) => (
+            <div key={l} className="text-center py-5 bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <div className="text-2xl font-extrabold text-emerald-600 mb-0.5">{v}</div>
+              <div className="text-xs text-slate-500 uppercase tracking-wide">{l}</div>
+            </div>
           ))}
         </div>
       </section>
