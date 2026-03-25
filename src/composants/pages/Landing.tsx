@@ -40,8 +40,9 @@ export default function Landing() {
           <span className="text-emerald-600">simplement.</span>
         </h1>
 
-        <p className="text-gray-500 mb-8 max-w-md">
-          Créez et gérez vos tâches facilement.
+        <p className="text-base sm:text-lg text-gray-500 mb-8 sm:mb-10 max-w-sm sm:max-w-md">
+          Créez, modifiez et supprimez vos tâches en quelques clics.
+          Gratuit, simple, sans distractions et accomplissez plus chaque jour.
         </p>
 
         <Button
@@ -50,6 +51,15 @@ export default function Landing() {
         >
           Commencer gratuitement →
         </Button>
+
+        {/* 3 arguments */}
+        <div className="flex justify-center gap-6 mt-8 text-sm text-gray-500 flex-wrap">
+          {["Gratuit pour toujours", "Sans carte bancaire", "Données privées"].map(t => (
+            <span key={t} className="flex items-center gap-1">
+              <span className="text-green-500 font-bold">✓</span> {t}
+            </span>
+          ))}
+        </div>
       </section>
 
       {/* FEATURES */}
@@ -77,14 +87,19 @@ export default function Landing() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {STEPS.map((s, i) => (
-            <StepCard
-              key={s.num}
-              {...s}
-              isLast={i === STEPS.length - 1}
-            />
-          ))}
-        </div>
+            {STEPS.map((s, i) => (
+              <div key={s.num} className="relative flex flex-col items-center text-center">
+                {i < STEPS.length - 1 && (
+                  <div className="hidden md:block absolute top-6 left-[calc(50%+2.5rem)] right-0 h-px border-t-2 border-dashed border-emerald-200" />
+                )}
+                <div className="w-14 h-14 rounded-full bg-emerald-600 text-white font-extrabold text-xl flex items-center justify-center mb-5 shadow-lg shadow-emerald-200">
+                  {s.num}
+                </div>
+                <h3 className="font-bold text-slate-800 mb-2">{s.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
       </section>
 
       <Footer />
