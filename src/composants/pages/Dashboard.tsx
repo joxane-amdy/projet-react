@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend,
 } from "recharts";
 import { useAuth } from "../hooks/useAuth";
+import {
+  getTasksRequest, createTaskRequest, updateTaskRequest, deleteTaskRequest,
+  TacheAPI,
+} from "../../services/taskService";
 
 //  Types 
 
@@ -12,14 +16,8 @@ type TypeTache = "Travail" | "Personnel" | "Santé" | "Étude";
 type Priorite  = "haute" | "normale" | "basse";
 type Filtre    = "Toutes" | TypeTache;
 
-interface Tache {
-  id: number;
-  titre: string;
-  type: TypeTache;
-  priorite: Priorite;
-  dateCreation: string;
-  terminee: boolean;
-}
+// On utilise directement la forme renvoyée par l'API (id numérique, dateCreation ISO)
+type Tache = TacheAPI;
 
 //  Constantes
 
@@ -77,24 +75,30 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  //  MODIF 1 — clé unique par utilisateur
-  const storageKey = `tasks_${user?.email ?? "guest"}`;
-
-  //  MODIF 2 — charger depuis localStorage au démarrage
-  const [taches, setTaches] = useState<Tache[]>(() => {
-    const saved = localStorage.getItem(storageKey);
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Tâches chargées depuis l'API (plus de localStorage)
+  const [taches, setTaches] = useState<Tache[]>([]);
+  const [chargement, setChargement] = useState(true);
 
   const [filtreActif, setFiltreActif] = useState<Filtre>("Toutes");
   const [formMode,    setFormMode]    = useState<"nouveau" | number | null>(null);
   const [form,        setForm]        = useState(FORM_INIT);
   const [erreur,      setErreur]      = useState("");
 
-  //  MODIF 3 — helper qui sauvegarde ET met à jour le state en même temps
-  function sauvegarderTaches(nouvellesTaches: Tache[]) {
-    localStorage.setItem(storageKey, JSON.stringify(nouvellesTaches));
-    setTaches(nouvellesTaches);
+  // Charger les tâches depuis le backend au montage du composant
+  useEffect(() => {
+    chargerTaches();
+  }, []);
+
+  async function chargerTaches() {
+    try {
+      setChargement(true);
+      const data = await getTasksRequest();
+      setTaches(data);
+    } catch (err) {
+      console.error("Impossible de charger les tâches :", err);
+    } finally {
+      setChargement(false);
+    }
   }
 
   //  Stats 
@@ -140,26 +144,50 @@ export default function Dashboard() {
     setErreur("");
   }
 
-  function sauvegarder() {
+  async function sauvegarder() {
     if (!form.titre.trim()) { setErreur("Le titre est obligatoire."); return; }
-    if (formMode === "nouveau") {
-      // sauvegarderTaches au lieu de setTaches
-      sauvegarderTaches([
-        { id: Date.now(), ...form, dateCreation: new Date().toISOString(), terminee: false },
-        ...taches,
-      ]);
-    } else {
-      sauvegarderTaches(taches.map((t) => (t.id === formMode ? { ...t, ...form } : t)));
+
+    try {
+      if (formMode === "nouveau") {
+        const nouvelleTache = await createTaskRequest({
+          titre: form.titre,
+          type: form.type,
+          priorite: form.priorite,
+        });
+        setTaches([nouvelleTache, ...taches]);
+      } else {
+        const tacheModifiee = await updateTaskRequest(formMode as number, {
+          titre: form.titre,
+          type: form.type,
+          priorite: form.priorite,
+        });
+        setTaches(taches.map((t) => (t.id === formMode ? tacheModifiee : t)));
+      }
+      fermerFormulaire();
+    } catch (err) {
+      setErreur("Erreur lors de l'enregistrement. Réessayez.");
     }
-    fermerFormulaire();
   }
 
-  // sauvegarderTaches au lieu de setTaches partout
-  const supprimerTache = (id: number) =>
-    sauvegarderTaches(taches.filter((t) => t.id !== id));
+  const supprimerTache = async (id: number) => {
+    try {
+      await deleteTaskRequest(id);
+      setTaches(taches.filter((t) => t.id !== id));
+    } catch (err) {
+      console.error("Erreur lors de la suppression :", err);
+    }
+  };
 
-  const cocherTache = (id: number) =>
-    sauvegarderTaches(taches.map((t) => (t.id === id ? { ...t, terminee: !t.terminee } : t)));
+  const cocherTache = async (id: number) => {
+    const tache = taches.find((t) => t.id === id);
+    if (!tache) return;
+    try {
+      const tacheModifiee = await updateTaskRequest(id, { terminee: !tache.terminee });
+      setTaches(taches.map((t) => (t.id === id ? tacheModifiee : t)));
+    } catch (err) {
+      console.error("Erreur lors de la mise à jour :", err);
+    }
+  };
 
   const deconnecter = () => { logout(); navigate("/"); };
 
@@ -177,6 +205,14 @@ export default function Dashboard() {
               Bonjour,{" "}
               <span className="text-gray-600 font-medium">{user?.prenom ?? "Invité"}</span>
             </span>
+            {user?.role === "admin" && (
+              <button
+                onClick={() => navigate("/admin")}
+                className="text-sm font-medium px-4 py-1.5 rounded-lg border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
+              >
+                Admin
+              </button>
+            )}
             <button
               onClick={ouvrirAjout}
               className="text-sm font-medium px-4 py-1.5 rounded-lg border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white transition-colors"
@@ -375,8 +411,12 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Liste vide */}
-          {tachesFiltrees.length === 0 ? (
+          {/* Chargement initial */}
+          {chargement ? (
+            <div className="text-center py-12 text-gray-400">
+              <p className="text-sm">Chargement des tâches…</p>
+            </div>
+          ) : tachesFiltrees.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
               <p className="text-sm mb-1">
                 {filtreActif === "Toutes" ? "Aucune tâche pour le moment" : `Aucune tâche "${filtreActif}"`}

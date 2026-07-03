@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing   from "./composants/pages/Landing";
 import Auth      from "./composants/pages/Auth";
 import Dashboard from "./composants/pages/Dashboard";
+import Admin     from "./composants/pages/Admin";
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

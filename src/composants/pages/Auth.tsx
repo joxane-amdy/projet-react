@@ -18,30 +18,31 @@ export default function Auth() {
   const [email,      setEmail]      = useState("");
   const [motDePasse, setMotDePasse] = useState("");
   const [confirm,    setConfirm]    = useState("");
+  const [role,       setRole]       = useState<"user" | "admin">("user");
   const [erreur,     setErreur]     = useState("");
   const [succes,     setSucces]     = useState("");
 
   useEffect(() => {
     setPrenom(""); setNom(""); setEmail("");
-    setMotDePasse(""); setConfirm("");
+    setMotDePasse(""); setConfirm(""); setRole("user");
     setErreur(""); setSucces("");
   }, [mode]);
 
-  function handleLogin() {
-  const success = login(email, motDePasse);
+  async function handleLogin() {
+    const success = await login(email, motDePasse);
 
-  if (success) {
-    navigate("/dashboard");
+    if (success) {
+      navigate("/dashboard");
+    }
   }
-}
 
-  function handleRegister() {
-  const success = register(prenom, nom, email, motDePasse);
+  async function handleRegister() {
+    const success = await register(prenom, nom, email, motDePasse, role);
 
-  if (success) {
-    navigate("/dashboard");
+    if (success) {
+      navigate("/dashboard");
+    }
   }
-}
   function handleReset() {
     if (!email) { setErreur("Entrez votre e-mail."); return; }
     setSucces(`Un lien a été envoyé à ${email}.`);
@@ -108,6 +109,38 @@ export default function Auth() {
 
             {mode === "register" && (
               <Champ label="Confirmer" type="password" value={confirm} onChange={setConfirm} placeholder="••••••••" />
+            )}
+
+            {mode === "register" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  Type de compte
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRole("user")}
+                    className={`py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+                      role === "user"
+                        ? "bg-emerald-50 border-emerald-500 text-emerald-700"
+                        : "border-gray-200 text-gray-500 hover:border-gray-300"
+                    }`}
+                  >
+                    Utilisateur
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("admin")}
+                    className={`py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+                      role === "admin"
+                        ? "bg-emerald-50 border-emerald-500 text-emerald-700"
+                        : "border-gray-200 text-gray-500 hover:border-gray-300"
+                    }`}
+                  >
+                    Administrateur
+                  </button>
+                </div>
+              </div>
             )}
 
             {mode === "login" && (
