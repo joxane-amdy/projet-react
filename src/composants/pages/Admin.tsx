@@ -2,25 +2,20 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { getAllUsersRequest, CurrentUser } from "../../services/authService";
+import Sidebar from "../Layout/Sidebar";
 
 export default function Admin() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const [comptes, setComptes]       = useState<CurrentUser[]>([]);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur]         = useState("");
+  const [recherche, setRecherche]   = useState("");
 
-  // Protection de la page : seul un admin connecté peut rester ici
   useEffect(() => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-    if (user.role !== "admin") {
-      navigate("/dashboard");
-      return;
-    }
+    if (!user) { navigate("/auth"); return; }
+    if (user.role !== "admin") { navigate("/dashboard"); return; }
     chargerComptes();
   }, [user]);
 
@@ -40,91 +35,164 @@ export default function Admin() {
     }
   }
 
+  const comptesFiltres = comptes.filter((c) =>
+    `${c.prenom} ${c.nom} ${c.email}`.toLowerCase().includes(recherche.toLowerCase())
+  );
+
+  const nbAdmins = comptes.filter((c) => c.role === "admin").length;
+  const nbUsers  = comptes.filter((c) => c.role === "user").length;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50">
 
-      {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-4 sm:px-8 py-4 flex items-center justify-between">
-        <button onClick={() => navigate("/dashboard")} className="text-2xl font-bold text-emerald-600">
-          TaskFlow
-        </button>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500 hidden sm:inline">
-            Connecté en tant que <strong className="text-gray-700">{user?.prenom}</strong> (admin)
-          </span>
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            ← Dashboard
-          </button>
-          <button onClick={logout} className="text-sm text-red-500 hover:text-red-700">
-            Déconnexion
-          </button>
-        </div>
-      </header>
+      {/* ── SIDEBAR ── */}
+      <Sidebar />
 
-      <main className="px-4 sm:px-8 py-8 max-w-5xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Comptes inscrits</h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Tous les utilisateurs ayant créé un compte sur TaskFlow.
-          </p>
-        </div>
+      {/* ── CONTENU ── */}
+      <div className="flex-1 flex flex-col min-w-0">
 
-        {erreur && (
-          <div className="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3 mb-4 border border-red-200">
-            {erreur}
+        {/* TOPBAR */}
+        <header className="bg-emerald-700 px-6 py-3.5 flex items-center justify-between flex-shrink-0">
+          <div>
+            <h1 className="text-white font-semibold text-base">Administration</h1>
+            <p className="text-emerald-200 text-xs">Gestion des comptes utilisateurs</p>
           </div>
-        )}
+          <button
+            onClick={chargerComptes}
+            className="flex items-center gap-2 bg-white/10 text-white text-sm px-3 py-1.5 rounded-xl hover:bg-white/20 transition-colors border border-white/20"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Actualiser
+          </button>
+        </header>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {chargement ? (
-            <div className="text-center py-12 text-gray-400 text-sm">
-              Chargement des comptes…
+        <main className="flex-1 px-6 py-6 space-y-6 overflow-y-auto">
+
+          {/* CARTES STATS */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { label: "Total comptes",    val: comptes.length, color: "text-gray-800",    bg: "bg-gray-100",    icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" },
+              { label: "Administrateurs",  val: nbAdmins,       color: "text-emerald-600", bg: "bg-emerald-50",  icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" },
+              { label: "Utilisateurs",     val: nbUsers,        color: "text-blue-600",    bg: "bg-blue-50",     icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
+            ].map(({ label, val, color, bg, icon }) => (
+              <div key={label} className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex items-center gap-4">
+                <div className={`${bg} p-3 rounded-xl flex-shrink-0`}>
+                  <svg className={`w-5 h-5 ${color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">{label}</p>
+                  <p className={`text-2xl font-bold ${color}`}>{val}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* TABLEAU */}
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+
+            {/* En-tête tableau */}
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Liste des comptes</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {comptesFiltres.length} compte{comptesFiltres.length > 1 ? "s" : ""}
+                  {recherche && ` correspondant à "${recherche}"`}
+                </p>
+              </div>
+              {/* Barre de recherche */}
+              <div className="relative flex-shrink-0">
+                <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  value={recherche}
+                  onChange={(e) => setRecherche(e.target.value)}
+                  placeholder="Rechercher…"
+                  className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition w-48"
+                />
+              </div>
             </div>
-          ) : comptes.length === 0 ? (
-            <div className="text-center py-12 text-gray-400 text-sm">
-              Aucun compte trouvé.
-            </div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 text-left text-gray-500 border-b border-gray-100">
-                  <th className="px-6 py-3 font-medium">Nom</th>
-                  <th className="px-6 py-3 font-medium">Email</th>
-                  <th className="px-6 py-3 font-medium">Rôle</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comptes.map((compte) => (
-                  <tr key={compte.id} className="border-b border-gray-50 last:border-0">
-                    <td className="px-6 py-4 text-gray-800 font-medium">
-                      {compte.prenom} {compte.nom}
-                    </td>
-                    <td className="px-6 py-4 text-gray-500">{compte.email}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                          compte.role === "admin"
-                            ? "bg-purple-100 text-purple-700"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {compte.role === "admin" ? "Administrateur" : "Utilisateur"}
-                      </span>
-                    </td>
+
+            {/* Erreur */}
+            {erreur && (
+              <div className="mx-6 mt-4 bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3 border border-red-200">
+                {erreur}
+              </div>
+            )}
+
+            {/* Contenu */}
+            {chargement ? (
+              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                <svg className="w-8 h-8 animate-spin text-emerald-400 mb-3" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <p className="text-sm">Chargement des comptes…</p>
+              </div>
+            ) : comptesFiltres.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                <svg className="w-10 h-10 text-gray-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <p className="text-sm">{recherche ? "Aucun compte ne correspond à cette recherche." : "Aucun compte trouvé."}</p>
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 text-left border-b border-gray-100">
+                    <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">#</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Rôle</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        <p className="text-xs text-gray-400 mt-4">
-          {comptes.length} compte{comptes.length > 1 ? "s" : ""} au total
-        </p>
-      </main>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {comptesFiltres.map((compte, index) => (
+                    <tr key={compte.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-xs text-gray-400 font-mono">
+                        {String(index + 1).padStart(2, "0")}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-xs font-bold flex-shrink-0">
+                            {compte.prenom?.[0]?.toUpperCase()}{compte.nom?.[0]?.toUpperCase()}
+                          </div>
+                          <span className="font-medium text-gray-800">
+                            {compte.prenom} {compte.nom}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-500">{compte.email}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+                          compte.role === "admin"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${compte.role === "admin" ? "bg-emerald-500" : "bg-gray-400"}`} />
+                          {compte.role === "admin" ? "Administrateur" : "Utilisateur"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          Actif
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
