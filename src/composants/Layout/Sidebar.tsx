@@ -3,12 +3,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 interface SidebarProps {
-  onNouvellesTaches?: () => void;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
 }
 
-export default function Sidebar({ onNouvellesTaches, mobileOpen = false, onMobileClose }: SidebarProps) {
+export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { user, logout } = useAuth();
@@ -93,17 +92,15 @@ export default function Sidebar({ onNouvellesTaches, mobileOpen = false, onMobil
           <span className={collapsed ? "lg:hidden" : ""}>Dashboard</span>
         </button>
 
-        {onNouvellesTaches && (
-          <button
-            onClick={() => { onNouvellesTaches(); onMobileClose?.(); }}
-            className={[itemBase, itemInactif].join(" ")}
-          >
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span className={collapsed ? "lg:hidden" : ""}>Nouvelle tâche</span>
-          </button>
-        )}
+        <button
+          onClick={() => navigate_("/tasks")}
+          className={[itemBase, estActif("/tasks") ? itemActif : itemInactif].join(" ")}
+        >
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <span className={collapsed ? "lg:hidden" : ""}>Tâches</span>
+        </button>
 
         {user?.role === "admin" && (
           <button
