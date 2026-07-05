@@ -11,8 +11,9 @@ type Priorite  = "haute" | "normale" | "basse";
 type Filtre    = "Toutes" | TypeTache;
 type Tache = TacheAPI;
 
-const TYPES: TypeTache[] = ["Travail", "Personnel", "Santé", "Étude"];
-const FILTRES: Filtre[]  = ["Toutes", ...TYPES];
+const TYPES: TypeTache[]  = ["Travail", "Personnel", "Santé", "Étude"];
+const FILTRES: Filtre[]   = ["Toutes", ...TYPES];
+const FORM_INIT = { titre: "", type: "Travail" as TypeTache, priorite: "normale" as Priorite };
 
 const BADGE_TYPE: Record<TypeTache, string> = {
   Travail: "bg-blue-100 text-blue-800", Personnel: "bg-purple-100 text-purple-800",
@@ -22,7 +23,6 @@ const BADGE_PRIO: Record<Priorite, string> = {
   haute: "bg-red-100 text-red-700", normale: "bg-gray-100 text-gray-500",
   basse: "bg-emerald-100 text-emerald-700",
 };
-const FORM_INIT = { titre: "", type: "Travail" as TypeTache, priorite: "normale" as Priorite };
 
 const formaterDate = (iso: string) =>
   new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
@@ -36,27 +36,31 @@ export default function Tasks() {
   const [formMode, setFormMode]       = useState<"nouveau" | number | null>(null);
   const [form, setForm]               = useState(FORM_INIT);
   const [erreur, setErreur]           = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false); // ← mobile
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => { chargerTaches(); }, []);
 
   async function chargerTaches() {
     try {
       setChargement(true);
-      const data = await getTasksRequest();
-      setTaches(data);
+      setTaches(await getTasksRequest());
     } catch (err) {
-      console.error("Impossible de charger les tâches :", err);
+      console.error(err);
     } finally {
       setChargement(false);
     }
   }
 
-  const tachesFiltrees = filtreActif === "Toutes" ? taches : taches.filter((t) => t.type === filtreActif);
+  const tachesFiltrees = filtreActif === "Toutes"
+    ? taches
+    : taches.filter((t) => t.type === filtreActif);
 
-  function ouvrirAjout() { setFormMode("nouveau"); setForm(FORM_INIT); setErreur(""); }
-  function ouvrirEdition(tache: Tache) { setFormMode(tache.id); setForm({ titre: tache.titre, type: tache.type, priorite: tache.priorite }); setErreur(""); }
-  function fermerFormulaire() { setFormMode(null); setErreur(""); }
+  const total     = taches.length;
+  const terminees = taches.filter((t) => t.terminee).length;
+
+  function ouvrirAjout()       { setFormMode("nouveau"); setForm(FORM_INIT); setErreur(""); }
+  function ouvrirEdition(t: Tache) { setFormMode(t.id); setForm({ titre: t.titre, type: t.type, priorite: t.priorite }); setErreur(""); }
+  function fermerFormulaire()  { setFormMode(null); setErreur(""); }
 
   async function sauvegarder() {
     if (!form.titre.trim()) { setErreur("Le titre est obligatoire."); return; }
@@ -69,12 +73,12 @@ export default function Tasks() {
         setTaches(taches.map((x) => (x.id === formMode ? t : x)));
       }
       fermerFormulaire();
-    } catch { setErreur("Erreur lors de l'enregistrement. Réessayez."); }
+    } catch { setErreur("Erreur lors de l'enregistrement."); }
   }
 
   const supprimerTache = async (id: number) => {
     try { await deleteTaskRequest(id); setTaches(taches.filter((t) => t.id !== id)); }
-    catch (err) { console.error("Erreur :", err); }
+    catch (err) { console.error(err); }
   };
 
   const cocherTache = async (id: number) => {
@@ -83,19 +87,17 @@ export default function Tasks() {
     try {
       const t = await updateTaskRequest(id, { terminee: !tache.terminee });
       setTaches(taches.map((x) => (x.id === id ? t : x)));
-    } catch (err) { console.error("Erreur :", err); }
+    } catch (err) { console.error(err); }
   };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-
-      {/* ── SIDEBAR ── */}
       <Sidebar
+        onNouvellesTaches={ouvrirAjout}
         mobileOpen={sidebarOpen}
         onMobileClose={() => setSidebarOpen(false)}
       />
 
-      {/* ── CONTENU ── */}
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* TOPBAR */}
@@ -112,7 +114,7 @@ export default function Tasks() {
             <div>
               <h1 className="text-white font-semibold text-sm sm:text-base">Mes tâches</h1>
               <p className="text-emerald-200 text-xs hidden sm:block">
-                Bonjour, <span className="font-medium text-white">{user?.prenom ?? "Invité"}</span> 👋
+                {total} tâche{total > 1 ? "s" : ""} · {terminees} terminée{terminees > 1 ? "s" : ""}
               </p>
             </div>
           </div>
@@ -128,129 +130,120 @@ export default function Tasks() {
           </button>
         </header>
 
-        <main className="flex-1 px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 overflow-y-auto">
+        <main className="flex-1 px-3 sm:px-6 py-4 sm:py-6 overflow-y-auto">
 
-          {/* SECTION TÂCHES */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5">
+          {/* FORMULAIRE */}
+          {formMode !== null && (
+            <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-4 sm:p-5 mb-4">
+              <p className="text-sm font-semibold text-emerald-800 mb-4">
+                {formMode === "nouveau" ? "✦ Nouvelle tâche" : "Modifier la tâche"}
+              </p>
+              <input
+                type="text"
+                value={form.titre}
+                onChange={(e) => { setForm((f) => ({ ...f, titre: e.target.value })); setErreur(""); }}
+                placeholder="Titre de la tâche…"
+                autoFocus
+                className="w-full text-sm border border-emerald-200 rounded-xl px-3 py-2.5 mb-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 bg-white text-gray-800 placeholder:text-gray-400 transition"
+              />
+              {erreur && <p className="text-xs text-red-500 mb-2">{erreur}</p>}
 
-            {/* En-tête + filtres */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <div>
-                <p className="text-base font-semibold text-gray-800">Mes tâches</p>
-                <p className="text-xs text-gray-400">
-                  {tachesFiltrees.length === 0 ? "Aucune tâche" : `${tachesFiltrees.length} tâche${tachesFiltrees.length > 1 ? "s" : ""}`}
-                  {filtreActif !== "Toutes" && ` · ${filtreActif}`}
-                </p>
-              </div>
-              {/* Filtres — scroll horizontal sur mobile */}
-              <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0 sm:bg-gray-100 sm:rounded-xl sm:p-0.5">
-                {FILTRES.map((filtre) => (
+              <div className="flex gap-2 overflow-x-auto pb-1 mb-3">
+                {TYPES.map((type) => (
                   <button
-                    key={filtre}
-                    onClick={() => setFiltreActif(filtre)}
+                    key={type}
+                    onClick={() => setForm((f) => ({ ...f, type }))}
                     className={[
-                      "flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                      filtreActif === filtre
-                        ? "bg-emerald-600 text-white sm:bg-white sm:text-gray-800 sm:shadow-sm"
-                        : "text-gray-500 hover:text-gray-700 bg-gray-100 sm:bg-transparent",
+                      "flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
+                      form.type === type ? `${BADGE_TYPE[type]} border-current` : "bg-white text-gray-500 border-gray-200 hover:border-gray-300",
                     ].join(" ")}
                   >
-                    {filtre}
+                    {type}
                   </button>
                 ))}
               </div>
-            </div>
 
-            {/* Formulaire inline */}
-            {formMode !== null && (
-              <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-4 mb-4">
-                <p className="text-sm font-semibold text-emerald-800 mb-3">
-                  {formMode === "nouveau" ? "✦ Nouvelle tâche" : "Modifier la tâche"}
-                </p>
-                <input
-                  type="text"
-                  value={form.titre}
-                  onChange={(e) => { setForm((f) => ({ ...f, titre: e.target.value })); setErreur(""); }}
-                  placeholder="Titre de la tâche…"
-                  autoFocus
-                  className="w-full text-sm border border-emerald-200 rounded-xl px-3 py-2.5 mb-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 bg-white text-gray-800 placeholder:text-gray-400 transition"
-                />
-                {erreur && <p className="text-xs text-red-500 mb-2">{erreur}</p>}
+              <select
+                value={form.priorite}
+                onChange={(e) => setForm((f) => ({ ...f, priorite: e.target.value as Priorite }))}
+                className="w-full text-sm border border-emerald-200 rounded-xl px-3 py-2.5 mb-4 outline-none focus:border-emerald-500 cursor-pointer bg-white text-gray-800"
+              >
+                <option value="haute">🔴 Haute priorité</option>
+                <option value="normale">🟡 Priorité normale</option>
+                <option value="basse">🟢 Basse priorité</option>
+              </select>
 
-                {/* Types — scroll horizontal sur mobile */}
-                <div className="flex gap-2 overflow-x-auto pb-1 mb-3">
-                  {TYPES.map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setForm((f) => ({ ...f, type }))}
-                      className={[
-                        "flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
-                        form.type === type ? `${BADGE_TYPE[type]} border-current` : "bg-white text-gray-500 border-gray-200 hover:border-gray-300",
-                      ].join(" ")}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-
-                <select
-                  value={form.priorite}
-                  onChange={(e) => setForm((f) => ({ ...f, priorite: e.target.value as Priorite }))}
-                  className="w-full text-sm border border-emerald-200 rounded-xl px-3 py-2.5 mb-3 outline-none focus:border-emerald-500 cursor-pointer bg-white text-gray-800"
+              <div className="flex gap-2 justify-end">
+                <button onClick={fermerFormulaire} className="px-4 py-2 text-xs border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors">
+                  Annuler
+                </button>
+                <button
+                  onClick={sauvegarder}
+                  disabled={!form.titre.trim()}
+                  className="px-4 py-2 text-xs bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  <option value="haute">Haute priorité</option>
-                  <option value="normale">Priorité normale</option>
-                  <option value="basse">Basse priorité</option>
-                </select>
-
-                <div className="flex gap-2 justify-end">
-                  <button onClick={fermerFormulaire} className="px-4 py-2 text-xs border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors">
-                    Annuler
-                  </button>
-                  <button
-                    onClick={sauvegarder}
-                    disabled={!form.titre.trim()}
-                    className="px-4 py-2 text-xs bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {formMode === "nouveau" ? "Créer la tâche" : "Enregistrer"}
-                  </button>
-                </div>
+                  {formMode === "nouveau" ? "Créer la tâche" : "Enregistrer"}
+                </button>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Liste */}
+          {/* FILTRES */}
+          <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4">
+            {FILTRES.map((filtre) => (
+              <button
+                key={filtre}
+                onClick={() => setFiltreActif(filtre)}
+                className={[
+                  "flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border",
+                  filtreActif === filtre
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : "bg-white text-gray-500 border-gray-200 hover:border-emerald-300 hover:text-emerald-600",
+                ].join(" ")}
+              >
+                {filtre}
+                {filtre !== "Toutes" && (
+                  <span className="ml-1.5 text-[10px] opacity-70">
+                    {taches.filter((t) => t.type === filtre).length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* LISTE */}
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             {chargement ? (
-              <div className="text-center py-10 text-gray-400">
-                <svg className="w-8 h-8 mx-auto mb-3 animate-spin text-emerald-400" fill="none" viewBox="0 0 24 24">
+              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                <svg className="w-8 h-8 animate-spin text-emerald-400 mb-3" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
                 <p className="text-sm">Chargement…</p>
               </div>
             ) : tachesFiltrees.length === 0 ? (
-              <div className="text-center py-10 text-gray-400">
-                <svg className="w-10 h-10 mx-auto mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                <svg className="w-12 h-12 text-gray-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <p className="text-sm mb-3">{filtreActif === "Toutes" ? "Aucune tâche pour le moment" : `Aucune tâche "${filtreActif}"`}</p>
-                {formMode === null && (
-                  <button onClick={ouvrirAjout} className="px-4 py-2 text-xs bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors">
-                    + Ajouter une tâche
-                  </button>
-                )}
+                <p className="text-sm mb-3">
+                  {filtreActif === "Toutes" ? "Aucune tâche pour le moment" : `Aucune tâche "${filtreActif}"`}
+                </p>
+                <button
+                  onClick={ouvrirAjout}
+                  className="px-4 py-2 text-xs bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors"
+                >
+                  + Créer une tâche
+                </button>
               </div>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className="divide-y divide-gray-50">
                 {tachesFiltrees.map((tache) => (
                   <div
                     key={tache.id}
                     className={[
-                      "flex items-start sm:items-center gap-3 px-3 sm:px-4 py-3 rounded-xl border transition-all",
-                      formMode === tache.id
-                        ? "border-emerald-300 ring-1 ring-emerald-100 bg-white"
-                        : tache.terminee
-                          ? "border-gray-100 bg-gray-50 opacity-50"
-                          : "border-gray-100 bg-gray-50 hover:border-emerald-200 hover:bg-emerald-50/30",
+                      "flex items-start sm:items-center gap-3 px-4 py-3.5 transition-colors",
+                      tache.terminee ? "opacity-50" : "hover:bg-gray-50",
                     ].join(" ")}
                   >
                     {/* Checkbox */}
@@ -284,13 +277,13 @@ export default function Tasks() {
                     <div className="flex gap-1.5 flex-shrink-0">
                       <button
                         onClick={() => ouvrirEdition(tache)}
-                        className="px-2 py-1 text-xs border border-gray-200 rounded-lg text-gray-400 hover:text-emerald-600 hover:border-emerald-200 transition-colors"
+                        className="px-2.5 py-1 text-xs border border-gray-200 rounded-lg text-gray-400 hover:text-emerald-600 hover:border-emerald-200 transition-colors"
                       >
                         Modifier
                       </button>
                       <button
                         onClick={() => supprimerTache(tache.id)}
-                        className="px-2 py-1 text-xs border border-gray-200 rounded-lg text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"
+                        className="px-2.5 py-1 text-xs border border-gray-200 rounded-lg text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"
                       >
                         Supprimer
                       </button>
@@ -300,6 +293,7 @@ export default function Tasks() {
               </div>
             )}
           </div>
+
         </main>
       </div>
     </div>
