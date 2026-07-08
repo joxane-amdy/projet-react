@@ -55,7 +55,7 @@ export async function getAllUsersRequest(): Promise<CurrentUser[]> {
   return data;
 }
 
-// Réservé aux admins — supprime définitivement le compte côté base de données
+// Supprimer un utilisateur (admin uniquement)
 export async function deleteUserRequest(id: number): Promise<void> {
   await api.delete(`/users/${id}`);
 }
